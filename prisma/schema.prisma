@@ -1,0 +1,68 @@
+
+// schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id             String    @id @default(cuid())
+  email          String    @unique
+  name           String
+  password       String    // Will be hashed
+  country        String
+  bio            String?
+  profilePicture String?
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  
+  messages       Message[]
+  groups         UserGroup[]
+  
+  @@map("users")
+}
+
+model Group {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  country     String?   
+  createdAt   DateTime  @default(now()) @map("created_at")
+  
+  
+  messages    Message[]
+  members     UserGroup[]
+  
+  @@map("groups")
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  author    User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  authorId  String
+  group     Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId   String
+  
+  @@map("messages")
+}
+
+model UserGroup {
+  id      String @id @default(cuid())
+  
+  // Relationships
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId  String
+  group   Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId String
+  
+  joinedAt DateTime @default(now()) @map("joined_at")
+  
+  @@unique([userId, groupId])
+  @@map("user_groups")
+}
