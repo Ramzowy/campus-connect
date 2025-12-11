@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Search, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -8,18 +8,49 @@ import { cn } from "@/lib/utils";
 interface Group {
   id: string;
   name: string;
+  description?: string | null;
   memberCount: number;
 }
 
-const groups: Group[] = [
-  { id: "1", name: "Students from India", memberCount: 234 },
-  { id: "2", name: "Computer Science Majors", memberCount: 567 },
-  { id: "3", name: "Soccer Club", memberCount: 89 },
-];
+interface GroupsListProps {
+  selectedGroupId: string | null;
+  onSelectGroup: (groupId: string) => void;
+}
 
-export default function GroupsList() {
-  const [activeGroupId, setActiveGroupId] = useState("1");
+export default function GroupsList({
+  selectedGroupId,
+  onSelectGroup,
+}: GroupsListProps) {
+  const [groups, setGroups] = useState<Group[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const loadGroups = async () => {
+      try {
+        setLoading(true);
+
+        const res = await fetch("/api/groups", {
+          method: "GET",
+          cache: "no-store",
+        });
+
+        if (!res.ok) {
+          console.error("Failed to load groups", res.status);
+          return;
+        }
+
+        const data = await res.json();
+        setGroups(data);
+      } catch (error) {
+        console.error("Error fetching groups", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadGroups();
+  }, []);
 
   const filteredGroups = groups.filter((group) =>
     group.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -43,33 +74,40 @@ export default function GroupsList() {
 
       {/* Groups List */}
       <div className="flex-1 overflow-y-auto">
-        {filteredGroups.map((group) => (
-          <button
-            key={group.id}
-            onClick={() => setActiveGroupId(group.id)}
-            className={cn(
-              "flex w-full items-center justify-between border-b border-border px-4 py-3 text-left transition-colors hover:bg-muted/50",
-              activeGroupId === group.id && "bg-muted"
-            )}
-          >
-            <div className="flex-1">
-              <h3
-                className={cn(
-                  "text-sm font-medium",
-                  activeGroupId === group.id
-                    ? "text-foreground"
-                    : "text-muted-foreground"
+        {filteredGroups.map((group) => {
+          const isActive = selectedGroupId === group.id;
+
+          return (
+            <button
+              key={group.id}
+              onClick={() => onSelectGroup(group.id)}
+              className={cn(
+                "flex w-full items-center justify-between border-b border-border px-4 py-3 text-left transition-colors hover:bg-muted/50",
+                isActive && "bg-muted"
+              )}
+            >
+              <div className="flex-1">
+                <h3
+                  className={cn(
+                    "text-sm font-medium",
+                    isActive ? "text-foreground" : "text-muted-foreground"
+                  )}
+                >
+                  {group.name}
+                </h3>
+                {group.description && (
+                  <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
+                    {group.description}
+                  </p>
                 )}
-              >
-                {group.name}
-              </h3>
-            </div>
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Users className="size-3" />
-              <span>{group.memberCount}</span>
-            </div>
-          </button>
-        ))}
+              </div>
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Users className="size-3" />
+                <span>{group.memberCount}</span>
+              </div>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

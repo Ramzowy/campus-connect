@@ -6,15 +6,20 @@ import { useState } from "react";
 import { Button } from "./button";
 import { Send } from "lucide-react";
 
-export default function MessageInput() {
+interface MessageInputProps {
+  onSend: (text: string) => void;
+  disabled?: boolean;
+}
+
+export default function MessageInput({ onSend, disabled }: MessageInputProps) {
   const [message, setMessage] = useState("");
 
   const handleSend = () => {
-    if (message.trim()) {
-      // Handle send message logic here
-      console.log("Sending message:", message);
-      setMessage("");
-    }
+    const text = message.trim();
+    if (!text) return;
+
+    onSend(text);
+    setMessage("");
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -32,9 +37,10 @@ export default function MessageInput() {
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyPress}
-          placeholder="Type a message..."
+          placeholder={disabled ? "Connecting to chat.." : "Type your message"}
           className="min-h-[40px] max-h-[120px] flex-1 resize-none rounded-md border border-input bg-background px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
           rows={1}
+          disabled={disabled}
           style={{
             height: "auto",
             overflowY: message.split("\n").length > 3 ? "auto" : "hidden",
@@ -51,7 +57,7 @@ export default function MessageInput() {
           onClick={handleSend}
           size="icon"
           className="shrink-0"
-          disabled={!message.trim()}
+          disabled={disabled || !message.trim()}
         >
           <Send className="size-4" />
         </Button>
